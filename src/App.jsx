@@ -663,50 +663,6 @@ export default function App() {
           <button className="btn btn-icon" onClick={handleRedoCmd} title="Tiếp tục (Ctrl+Y)">
             <Redo2 size={20} />
           </button>
-          
-          <div className="tool-divider" style={{ width: '1px', height: '24px', background: 'var(--panel-border)', margin: '0 8px' }} />
-
-          <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-            <button 
-              className={`btn btn-icon ${shadowEffect && !neonEffect ? 'active' : ''}`} 
-              onClick={() => { setShadowEffect(!shadowEffect); if (neonEffect) setNeonEffect(false); }} 
-              title="Đổ bóng để nổi bật công cụ vẽ (Drop Shadow)"
-            >
-              <Layers size={20} />
-            </button>
-            <button 
-              className={`btn btn-icon ${neonEffect ? 'active' : ''}`} 
-              onClick={() => { setNeonEffect(!neonEffect); if (shadowEffect) setShadowEffect(false); }} 
-              title="Hiệu ứng phát sáng màu (Neon Glow)"
-            >
-              <Sparkles size={20} />
-            </button>
-            <button 
-              className={`btn btn-icon ${textBgEffect ? 'active' : ''}`} 
-              onClick={() => setTextBgEffect(!textBgEffect)} 
-              title="Thêm nền cho chữ (Text Background)"
-            >
-              <Highlighter size={20} />
-            </button>
-            <button 
-              className={`btn btn-icon ${outlineEffect ? 'active' : ''}`} 
-              onClick={() => { setOutlineEffect(!outlineEffect); if (neonEffect) setNeonEffect(false); }} 
-              title="Thêm viền cho chữ và hình (Outline)"
-            >
-              <PenTool size={20} />
-            </button>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0 0.5rem' }}>
-            <label style={{ fontSize: '0.875rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Độ mờ:</label>
-            <input 
-              type="range" 
-              min="0.1" max="1" step="0.1" 
-              value={opacity} 
-              onChange={(e) => setOpacity(parseFloat(e.target.value))}
-              style={{ width: '60px' }}
-            />
-          </div>
 
           <div className="tool-divider" style={{ width: '1px', height: '24px', background: 'var(--panel-border)', margin: '0 8px' }} />
 
@@ -733,14 +689,17 @@ export default function App() {
       <main className="main-content">
         
         {/* Floating Toolbar */}
-        <aside className="toolbar glass">
-          <div className="tool-group">
+        <aside className="toolbar glass" style={{ width: '220px' }}>
+          
+          <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem', letterSpacing: '0.05em' }}>CÔNG CỤ</div>
+          <div className="tool-group" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
             {tools.map(t => (
               <button 
                 key={t.id}
                 className={`btn-icon ${activeTool === t.id ? 'active' : ''}`}
                 onClick={() => setActiveTool(t.id)}
                 title={t.title}
+                style={{ width: '100%', justifyContent: 'center' }}
               >
                 {t.icon}
               </button>
@@ -749,7 +708,8 @@ export default function App() {
           
           <div className="tool-divider" />
           
-          <div className="tool-group" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', padding: '0.25rem', justifyContent: 'center' }}>
+          <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem', letterSpacing: '0.05em' }}>MÀU SẮC</div>
+          <div className="tool-group" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', justifyItems: 'center' }}>
             {colors.map(c => (
               <div 
                 key={c}
@@ -778,9 +738,64 @@ export default function App() {
 
           <div className="tool-divider" />
 
+          <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem', letterSpacing: '0.05em' }}>HIỆU ỨNG</div>
+          <div className="tool-group" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
+            <button 
+              className={`btn-icon ${shadowEffect && !neonEffect ? 'active' : ''}`} 
+              onClick={() => { setShadowEffect(!shadowEffect); if (neonEffect) setNeonEffect(false); }} 
+              title="Đổ bóng để nổi bật công cụ vẽ (Drop Shadow)"
+              style={{ width: '100%', justifyContent: 'center' }}
+            >
+              <Layers size={20} />
+            </button>
+            <button 
+              className={`btn-icon ${neonEffect ? 'active' : ''}`} 
+              onClick={() => { setNeonEffect(!neonEffect); if (shadowEffect) setShadowEffect(false); }} 
+              title="Hiệu ứng phát sáng màu (Neon Glow)"
+              style={{ width: '100%', justifyContent: 'center' }}
+            >
+              <Sparkles size={20} />
+            </button>
+            <button 
+              className={`btn-icon ${textBgEffect ? 'active' : ''}`} 
+              onClick={() => setTextBgEffect(!textBgEffect)} 
+              title="Thêm nền cho chữ (Text Background)"
+              style={{ width: '100%', justifyContent: 'center' }}
+            >
+              <Highlighter size={20} />
+            </button>
+            <button 
+              className={`btn-icon ${outlineEffect ? 'active' : ''}`} 
+              onClick={() => { setOutlineEffect(!outlineEffect); if (neonEffect) setNeonEffect(false); }} 
+              title="Thêm viền cho nét và chữ (Outline)"
+              style={{ width: '100%', justifyContent: 'center' }}
+            >
+              <PenTool size={20} />
+            </button>
+          </div>
+
+          <div className="tool-divider" />
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+               <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>ĐỘ MỜ</label>
+               <span style={{ fontSize: '0.75rem', color: 'var(--text-main)' }}>{Math.round(opacity * 100)}%</span>
+            </div>
+            <input 
+              type="range" 
+              min="0.1" max="1" step="0.1" 
+              value={opacity} 
+              onChange={(e) => setOpacity(parseFloat(e.target.value))}
+              style={{ width: '100%' }}
+            />
+          </div>
+
+          <div className="tool-divider" />
+
           <div className="tool-group">
-            <button className="btn-icon" onClick={deleteSelected} title="Xóa (Delete/Backspace)">
-              <Trash2 size={24} color="var(--danger)" />
+            <button className="btn-icon" onClick={deleteSelected} title="Xóa (Delete/Backspace)" style={{ width: '100%', justifyContent: 'center' }}>
+              <Trash2 size={20} color="var(--danger)" />
+              <span style={{ color: 'var(--danger)', fontSize: '0.875rem', marginLeft: '0.5rem', fontWeight: 500 }}>Xóa vùng chọn</span>
             </button>
           </div>
         </aside>
