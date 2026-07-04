@@ -19,10 +19,12 @@ import {
   Highlighter,
   PenTool,
   RefreshCw,
-  Lock,
-  Unlock,
   Eraser,
-  ImagePlus
+  ImagePlus,
+  Pen,
+  Square,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import './App.css';
 
@@ -35,7 +37,9 @@ export default function App() {
   const [activeTool, setActiveTool] = useState('select');
   const [color, setColor] = useState('#ef4444');
   const [opacity, setOpacity] = useState(1);
+  const [strokeWidth, setStrokeWidth] = useState(4);
   const [effectIntensity, setEffectIntensity] = useState(50);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const isInsertRef = useRef(false);
   
   // Effects
@@ -57,11 +61,13 @@ export default function App() {
   const outlineEffectRef = useRef(outlineEffect);
   const isLockedRef = useRef(isLocked);
   const effectIntensityRef = useRef(effectIntensity);
+  const strokeWidthRef = useRef(strokeWidth);
 
   // Sync refs with state
   useEffect(() => { activeToolRef.current = activeTool; }, [activeTool]);
   useEffect(() => { colorRef.current = color; }, [color]);
   useEffect(() => { opacityRef.current = opacity; }, [opacity]);
+  useEffect(() => { strokeWidthRef.current = strokeWidth; }, [strokeWidth]);
   useEffect(() => { neonEffectRef.current = neonEffect; }, [neonEffect]);
   useEffect(() => { shadowEffectRef.current = shadowEffect; }, [shadowEffect]);
   useEffect(() => { textBgEffectRef.current = textBgEffect; }, [textBgEffect]);
@@ -234,7 +240,7 @@ export default function App() {
           left: x,
           top: y,
           radius: 1,
-          strokeWidth: 4,
+          strokeWidth: strokeWidthRef.current,
           stroke: currentColor,
           opacity: currentOpacity,
           shadow: shadow,
@@ -243,6 +249,7 @@ export default function App() {
           originY: 'center',
           selectable: false,
           evented: false,
+          objectCaching: false,
         });
         drawingState.current.activeShape = circle;
         initCanvas.add(circle);
@@ -250,7 +257,7 @@ export default function App() {
         const pathString = getArrowPath(x, y, x, y);
         const path = new fabric.Path(pathString, {
           stroke: currentColor,
-          strokeWidth: 4,
+          strokeWidth: strokeWidthRef.current,
           strokeLinecap: 'round',
           strokeLinejoin: 'round',
           opacity: currentOpacity,
@@ -262,6 +269,33 @@ export default function App() {
         });
         drawingState.current.activeShape = path;
         initCanvas.add(path);
+      } else if (currentTool === 'censor') {
+        // Create mosaic pattern
+        const patternCanvas = document.createElement('canvas');
+        patternCanvas.width = 10;
+        patternCanvas.height = 10;
+        const ctx = patternCanvas.getContext('2d');
+        ctx.fillStyle = '#111';
+        ctx.fillRect(0, 0, 5, 5);
+        ctx.fillRect(5, 5, 5, 5);
+        ctx.fillStyle = '#444';
+        ctx.fillRect(5, 0, 5, 5);
+        ctx.fillRect(0, 5, 5, 5);
+        const mosaic = new fabric.Pattern({ source: patternCanvas, repeat: 'repeat' });
+
+        const rect = new fabric.Rect({
+          left: x,
+          top: y,
+          width: 0,
+          height: 0,
+          fill: mosaic,
+          opacity: 0.95,
+          selectable: false,
+          evented: false,
+          objectCaching: false,
+        });
+        drawingState.current.activeShape = rect;
+        initCanvas.add(rect);
       } else if (currentTool === 'crop') {
         const rect = new fabric.Rect({
           left: x,
@@ -320,6 +354,10 @@ export default function App() {
         const parsedPath = fabric.util.parsePath(pathString);
         shape.set({ path: parsedPath });
         initCanvas.renderAll();
+      } else if (currentTool === 'censor' && shape) {
+        shape.set({ width: Math.abs(origX - x), height: Math.abs(origY - y) });
+        shape.set({ left: Math.min(x, origX), top: Math.min(y, origY) });
+        initCanvas.renderAll();
       } else if (currentTool === 'crop' && shape) {
         shape.set({ width: Math.abs(origX - x), height: Math.abs(origY - y) });
         shape.set({ left: Math.min(x, origX), top: Math.min(y, origY) });
@@ -376,6 +414,13 @@ export default function App() {
       }
       drawingState.current.isDrawing = false;
       drawingState.current.activeShape = null;
+    });
+
+    initCanvas.on('path:created', (e) => {
+      if (e.path) {
+        e.path.set({ objectCaching: false });
+        saveHistory();
+      }
     });
     
     // Keydown for deletion & undo/redo
@@ -488,6 +533,7 @@ export default function App() {
     });
     if (activeTool !== 'select' || isLocked) canvas.discardActiveObject();
     canvas.defaultCursor = activeTool === 'pan' ? 'grab' : activeTool === 'crop' ? 'crosshair' : activeTool === 'eraser' ? 'crosshair' : 'default';
+    canvas.isDrawingMode = (activeTool === 'pen' && !isLocked);
     canvas.renderAll();
   }, [activeTool, isLocked]);
 
@@ -499,6 +545,20 @@ export default function App() {
     
     const getOutlineColor = (c) => c === '#ffffff' ? '#000000' : '#ffffff';
 
+    if (canvas.freeDrawingBrush) {
+      canvas.freeDrawingBrush.color = color;
+      canvas.freeDrawingBrush.width = strokeWidth;
+      if (neonEffect) {
+        canvas.freeDrawingBrush.shadow = new fabric.Shadow({ color: color, blur: (effectIntensity / 100) * 30 });
+      } else if (outlineEffect) {
+        canvas.freeDrawingBrush.shadow = new fabric.Shadow({ color: getOutlineColor(color), blur: (effectIntensity / 100) * 10 });
+      } else if (shadowEffect) {
+        canvas.freeDrawingBrush.shadow = new fabric.Shadow({ color: 'rgba(0,0,0,0.6)', blur: (effectIntensity / 100) * 8, offsetX: (effectIntensity/100)*5, offsetY: (effectIntensity/100)*5 });
+      } else {
+        canvas.freeDrawingBrush.shadow = null;
+      }
+    }
+
     if (activeObj) {
       if (activeObj.type === 'i-text') {
         activeObj.set({ 
@@ -509,9 +569,9 @@ export default function App() {
           strokeWidth: outlineEffect ? 2 : 0
         });
       } else if (activeObj.type === 'circle') {
-        activeObj.set({ stroke: color, opacity });
+        activeObj.set({ stroke: color, opacity, strokeWidth });
       } else if (activeObj.type === 'path') {
-        activeObj.set({ stroke: color, fill: color, opacity });
+        activeObj.set({ stroke: color, fill: color, opacity, strokeWidth });
       } else if (activeObj.type === 'image') {
         activeObj.set({ opacity, shadow: null });
         canvas.renderAll();
@@ -652,6 +712,10 @@ export default function App() {
       return null;
     }
 
+    // Disable caching temporarily for crisp export
+    canvas.getObjects().forEach(obj => obj.set('objectCaching', false));
+    canvas.renderAll();
+
     const dataUrl = canvas.toDataURL({
       format: 'png',
       multiplier: 1 / baseScaleX,
@@ -662,6 +726,8 @@ export default function App() {
     });
 
     canvas.setViewportTransform(originalVpt);
+    // Re-enable caching
+    canvas.getObjects().forEach(obj => obj.set('objectCaching', true));
     return dataUrl;
   };
 
@@ -749,10 +815,12 @@ export default function App() {
   const tools = [
     { id: 'select', icon: <MousePointer2 size={20} />, title: 'Chọn (Select)' },
     { id: 'pan', icon: <Hand size={20} />, title: 'Kéo xem ảnh (Pan)' },
-    { id: 'crop', icon: <Crop size={20} />, title: 'Cắt vùng ảnh (Crop)' },
+    { id: 'pen', icon: <Pen size={20} />, title: 'Vẽ tự do (Pen)' },
     { id: 'circle', icon: <Circle size={20} />, title: 'Khoanh tròn (Circle)' },
     { id: 'arrow', icon: <ArrowUpRight size={20} />, title: 'Mũi tên (Arrow)' },
     { id: 'text', icon: <Type size={20} />, title: 'Ghi chú (Text)' },
+    { id: 'censor', icon: <Square size={20} fill="currentColor" opacity={0.5} />, title: 'Che mờ (Censor/Blur)' },
+    { id: 'crop', icon: <Crop size={20} />, title: 'Cắt vùng ảnh (Crop)' },
     { id: 'eraser', icon: <Eraser size={20} />, title: 'Xóa kéo (Eraser)' },
   ];
 
@@ -820,12 +888,34 @@ export default function App() {
       </header>
 
       {/* Main Content Area */}
-      <main className="main-content">
+      <main className="main-content" style={{ display: 'flex', flexDirection: 'row' }}>
         
+        {/* Sidebar Toggle Button (when closed) */}
+        {!isSidebarOpen && (
+           <button 
+             className="btn-icon glass" 
+             onClick={() => setIsSidebarOpen(true)} 
+             style={{ position: 'absolute', top: '80px', left: '16px', zIndex: 100, width: '40px', height: '40px', justifyContent: 'center' }}
+           >
+             <ChevronRight />
+           </button>
+        )}
+
         {/* Floating Toolbar */}
-        <aside className="toolbar glass" style={{ width: '180px' }}>
+        <aside className="toolbar glass" style={{ 
+          width: '180px', 
+          display: isSidebarOpen ? 'flex' : 'none', 
+          transform: isSidebarOpen ? 'translateX(0)' : 'translateX(-200px)',
+          transition: 'all 0.3s ease'
+        }}>
           
-          <div style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.2rem', letterSpacing: '0.05em' }}>CÔNG CỤ</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
+            <span style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>CÔNG CỤ</span>
+            <button className="btn-icon" onClick={() => setIsSidebarOpen(false)} style={{ width: '24px', height: '24px', padding: 0 }}>
+               <ChevronLeft size={16} />
+            </button>
+          </div>
+          
           <div className="tool-group" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.35rem' }}>
             {tools.map(t => (
               <button 
@@ -920,6 +1010,20 @@ export default function App() {
               min="0" max="100" step="1" 
               value={effectIntensity} 
               onChange={(e) => setEffectIntensity(parseInt(e.target.value))}
+              style={{ width: '100%' }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.25rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+               <label style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>ĐỘ DÀY</label>
+               <span style={{ fontSize: '0.7rem', color: 'var(--text-main)' }}>{strokeWidth}px</span>
+            </div>
+            <input 
+              type="range" 
+              min="1" max="20" step="1" 
+              value={strokeWidth} 
+              onChange={(e) => setStrokeWidth(parseInt(e.target.value))}
               style={{ width: '100%' }}
             />
           </div>
