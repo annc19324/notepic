@@ -19,6 +19,8 @@ import {
   Highlighter,
   PenTool,
   RefreshCw,
+  Lock,
+  Unlock,
   Eraser,
   ImagePlus,
   Pen,
