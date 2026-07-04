@@ -364,9 +364,14 @@ export default function App() {
             initCanvas.remove(shape);
           }
         } else if (shape) {
-          shape.set({ selectable: true, evented: true });
-          shape.setCoords();
-          saveHistory();
+          const bounds = shape.getBoundingRect();
+          if (bounds.width < 5 && bounds.height < 5) {
+            initCanvas.remove(shape);
+          } else {
+            shape.set({ selectable: true, evented: true });
+            shape.setCoords();
+            saveHistory();
+          }
         }
       }
       drawingState.current.isDrawing = false;
@@ -608,20 +613,32 @@ export default function App() {
     canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
 
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    let hasImage = false;
+    
+    // Calculate bounding box strictly around images if present
     canvas.getObjects().forEach(obj => {
-      const bound = obj.getBoundingRect();
-      if (bound.left < minX) minX = bound.left;
-      if (bound.top < minY) minY = bound.top;
-      if (bound.left + bound.width > maxX) maxX = bound.left + bound.width;
-      if (bound.top + bound.height > maxY) maxY = bound.top + bound.height;
+      if (obj.type === 'image') {
+        const bound = obj.getBoundingRect();
+        if (bound.left < minX) minX = bound.left;
+        if (bound.top < minY) minY = bound.top;
+        if (bound.left + bound.width > maxX) maxX = bound.left + bound.width;
+        if (bound.top + bound.height > maxY) maxY = bound.top + bound.height;
+        hasImage = true;
+      }
     });
 
-    canvas.setViewportTransform(originalVpt);
+    // If no images are present, fallback to bounding all objects
+    if (!hasImage) {
+      canvas.getObjects().forEach(obj => {
+        const bound = obj.getBoundingRect();
+        if (bound.left < minX) minX = bound.left;
+        if (bound.top < minY) minY = bound.top;
+        if (bound.left + bound.width > maxX) maxX = bound.left + bound.width;
+        if (bound.top + bound.height > maxY) maxY = bound.top + bound.height;
+      });
+    }
 
-    minX = Math.max(-10000, minX - 20);
-    minY = Math.max(-10000, minY - 20);
-    maxX = maxX + 20;
-    maxY = maxY + 20;
+    canvas.setViewportTransform(originalVpt);
 
     const width = maxX - minX;
     const height = maxY - minY;
