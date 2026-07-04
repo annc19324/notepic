@@ -518,12 +518,10 @@ export default function App() {
   };
 
   const handleClearAll = () => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa tất cả bản vẽ không?')) {
-      fabricRef.current.clear();
-      saveHistory();
-      setHasObjects(false);
-      showToast('Đã xóa tất cả');
-    }
+    fabricRef.current.clear();
+    saveHistory();
+    setHasObjects(false);
+    showToast('Đã dọn dẹp bản vẽ');
   };
 
   const deleteSelected = () => {
