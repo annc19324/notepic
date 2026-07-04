@@ -20,7 +20,9 @@ import {
   PenTool,
   RefreshCw,
   Lock,
-  Unlock
+  Unlock,
+  Eraser,
+  ImagePlus
 } from 'lucide-react';
 import './App.css';
 
@@ -33,6 +35,7 @@ export default function App() {
   const [activeTool, setActiveTool] = useState('select');
   const [color, setColor] = useState('#ef4444');
   const [opacity, setOpacity] = useState(1);
+  const isInsertRef = useRef(false);
   
   // Effects
   const [neonEffect, setNeonEffect] = useState(false);
@@ -85,6 +88,9 @@ export default function App() {
     history.current = history.current.slice(0, historyIndex.current + 1);
     history.current.push(json);
     historyIndex.current++;
+    try {
+      localStorage.setItem('notepic_data', JSON.stringify(json));
+    } catch (e) {}
   };
 
   const showToast = (msg) => {
@@ -102,7 +108,20 @@ export default function App() {
     });
     
     fabricRef.current = initCanvas;
-    saveHistory(); // initial state
+    
+    // Load from local storage
+    const savedData = localStorage.getItem('notepic_data');
+    if (savedData) {
+      isHistoryProcessing.current = true;
+      initCanvas.loadFromJSON(savedData, () => {
+        initCanvas.renderAll();
+        isHistoryProcessing.current = false;
+        saveHistory();
+        setHasObjects(initCanvas.getObjects().length > 0);
+      });
+    } else {
+      saveHistory(); // initial state
+    }
 
     // Track history
     initCanvas.on('object:modified', saveHistory);
@@ -155,6 +174,16 @@ export default function App() {
       drawingState.current.origY = y;
 
       if (currentTool === 'select') return;
+
+      if (currentTool === 'eraser') {
+        drawingState.current.isDrawing = true;
+        const target = initCanvas.findTarget(o.e);
+        if (target) {
+          initCanvas.remove(target);
+          saveHistory();
+        }
+        return;
+      }
 
       // Deselect all if we are not in select mode
       initCanvas.discardActiveObject();
@@ -218,6 +247,8 @@ export default function App() {
         const path = new fabric.Path(pathString, {
           stroke: currentColor,
           strokeWidth: 4,
+          strokeLinecap: 'round',
+          strokeLinejoin: 'round',
           opacity: currentOpacity,
           shadow: shadow,
           fill: 'transparent',
@@ -260,6 +291,16 @@ export default function App() {
       }
 
       if (!drawingState.current.isDrawing) return;
+      
+      if (currentTool === 'eraser') {
+        const target = initCanvas.findTarget(o.e);
+        if (target) {
+          initCanvas.remove(target);
+          saveHistory();
+        }
+        return;
+      }
+
       const pointer = initCanvas.getPointer(o.e);
       const { x, y } = pointer;
       const shape = drawingState.current.activeShape;
@@ -429,7 +470,7 @@ export default function App() {
       });
     });
     if (activeTool !== 'select' || isLocked) canvas.discardActiveObject();
-    canvas.defaultCursor = activeTool === 'pan' ? 'grab' : activeTool === 'crop' ? 'crosshair' : 'default';
+    canvas.defaultCursor = activeTool === 'pan' ? 'grab' : activeTool === 'crop' ? 'crosshair' : activeTool === 'eraser' ? 'pointer' : 'default';
     canvas.renderAll();
   }, [activeTool, isLocked]);
 
@@ -489,10 +530,11 @@ export default function App() {
   const getArrowPath = (fromx, fromy, tox, toy) => {
     const angle = Math.atan2(toy - fromy, tox - fromx);
     const headlen = 20;
-    return `M ${fromx} ${fromy} L ${tox} ${toy} M ${tox} ${toy} L ${tox - headlen * Math.cos(angle - Math.PI / 6)} ${toy - headlen * Math.sin(angle - Math.PI / 6)} M ${tox} ${toy} L ${tox - headlen * Math.cos(angle + Math.PI / 6)} ${toy - headlen * Math.sin(angle + Math.PI / 6)}`;
+    return `M ${fromx} ${fromy} L ${tox} ${toy} L ${tox - headlen * Math.cos(angle - Math.PI / 7)} ${toy - headlen * Math.sin(angle - Math.PI / 7)} M ${tox} ${toy} L ${tox - headlen * Math.cos(angle + Math.PI / 7)} ${toy - headlen * Math.sin(angle + Math.PI / 7)}`;
   };
 
   const handleImageUpload = (e) => {
+    const isInsert = isInsertRef.current;
     const file = e.target.files[0];
     if (!file) return;
     
@@ -500,9 +542,10 @@ export default function App() {
     reader.onload = (event) => {
       fabric.Image.fromURL(event.target.result, (img) => {
         if (img.width > 1500) img.scaleToWidth(1500);
+        const offset = isInsert ? 0 : (Math.random() * 100 - 50);
         img.set({
-          left: fabricRef.current.width / 2,
-          top: fabricRef.current.height / 2,
+          left: (fabricRef.current.width / 2) + offset,
+          top: (fabricRef.current.height / 2) + offset,
           originX: 'center',
           originY: 'center',
         });
@@ -646,6 +689,7 @@ export default function App() {
     { id: 'circle', icon: <Circle size={24} />, title: 'Khoanh tròn (Circle)' },
     { id: 'arrow', icon: <ArrowUpRight size={24} />, title: 'Mũi tên (Arrow)' },
     { id: 'text', icon: <Type size={24} />, title: 'Ghi chú (Text)' },
+    { id: 'eraser', icon: <Eraser size={24} />, title: 'Xóa kéo (Eraser)' },
   ];
 
   const colors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ffffff', '#000000'];
@@ -682,9 +726,19 @@ export default function App() {
 
           <div className="tool-divider" style={{ width: '1px', height: '24px', background: 'var(--panel-border)', margin: '0 8px' }} />
 
-          <button className="btn glass" onClick={() => fileInputRef.current?.click()}>
+          <button className="btn glass" onClick={() => {
+             isInsertRef.current = true;
+             fileInputRef.current?.click();
+          }}>
             <ImageIcon size={20} />
-            Tải ảnh lên
+            Chèn ảnh (Đè lên)
+          </button>
+          <button className="btn glass" onClick={() => {
+             isInsertRef.current = false;
+             fileInputRef.current?.click();
+          }}>
+            <ImagePlus size={20} />
+            Thêm ảnh (Bên cạnh)
           </button>
           <button className="btn glass" onClick={handlePasteButton}>
             <ClipboardPaste size={20} />
@@ -821,7 +875,7 @@ export default function App() {
 
             <button className="btn-icon" onClick={deleteSelected} title="Xóa vùng đang chọn (Delete/Backspace)" style={{ width: '100%', justifyContent: 'center' }}>
               <Trash2 size={20} color="var(--danger)" />
-              <span style={{ color: 'var(--danger)', fontSize: '0.75rem', marginLeft: '0.5rem', fontWeight: 500 }}>Xóa vùng</span>
+              <span style={{ color: 'var(--danger)', fontSize: '0.75rem', marginLeft: '0.5rem', fontWeight: 500 }}>Xóa chọn</span>
             </button>
           </div>
         </aside>
