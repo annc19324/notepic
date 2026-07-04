@@ -404,8 +404,8 @@ export default function App() {
         handleRedoCmd();
       }
 
-      // Copy (Ctrl+C)
-      if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+      // Copy (Ctrl+C or Ctrl+S)
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 's')) {
         if (initCanvas.getActiveObject()?.isEditing) return; // Allow normal text copy inside textbox
         e.preventDefault();
         handleCopy();
