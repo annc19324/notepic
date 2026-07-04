@@ -251,11 +251,11 @@ export default function App() {
         const path = new fabric.Path(pathString, {
           stroke: currentColor,
           strokeWidth: 4,
-          strokeLinecap: 'butt',
-          strokeLinejoin: 'miter',
+          strokeLinecap: 'round',
+          strokeLinejoin: 'round',
           opacity: currentOpacity,
           shadow: shadow,
-          fill: 'transparent',
+          fill: currentColor,
           selectable: false,
           evented: false,
           objectCaching: false,
@@ -496,8 +496,10 @@ export default function App() {
           stroke: outlineEffect ? getOutlineColor(color) : null,
           strokeWidth: outlineEffect ? 2 : 0
         });
-      } else if (activeObj.type === 'circle' || activeObj.type === 'path') {
+      } else if (activeObj.type === 'circle') {
         activeObj.set({ stroke: color, opacity });
+      } else if (activeObj.type === 'path') {
+        activeObj.set({ stroke: color, fill: color, opacity });
       } else if (activeObj.type === 'image') {
         activeObj.set({ opacity });
       }
@@ -539,7 +541,7 @@ export default function App() {
     const leftY = toy - headlen * Math.sin(angle - Math.PI / 8);
     const rightX = tox - headlen * Math.cos(angle + Math.PI / 8);
     const rightY = toy - headlen * Math.sin(angle + Math.PI / 8);
-    return `M ${fromx} ${fromy} L ${tox} ${toy} M ${leftX} ${leftY} L ${tox} ${toy} L ${rightX} ${rightY}`;
+    return `M ${fromx} ${fromy} L ${tox} ${toy} M ${tox} ${toy} L ${leftX} ${leftY} L ${rightX} ${rightY} Z`;
   };
 
   const handleImageUpload = (e) => {
