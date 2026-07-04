@@ -617,10 +617,12 @@ export default function App() {
 
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     let hasImage = false;
+    let baseScaleX = 1;
     
     // Calculate bounding box strictly around images if present
     canvas.getObjects().forEach(obj => {
       if (obj.type === 'image') {
+        if (!hasImage) baseScaleX = obj.scaleX || 1;
         const bound = obj.getBoundingRect();
         if (bound.left < minX) minX = bound.left;
         if (bound.top < minY) minY = bound.top;
@@ -639,23 +641,28 @@ export default function App() {
         if (bound.left + bound.width > maxX) maxX = bound.left + bound.width;
         if (bound.top + bound.height > maxY) maxY = bound.top + bound.height;
       });
+      baseScaleX = 0.5; // multiplier will be 2
     }
-
-    canvas.setViewportTransform(originalVpt);
 
     const width = maxX - minX;
     const height = maxY - minY;
 
-    if (width <= 0 || height <= 0) return null;
+    if (width <= 0 || height <= 0) {
+      canvas.setViewportTransform(originalVpt);
+      return null;
+    }
 
-    return canvas.toDataURL({
+    const dataUrl = canvas.toDataURL({
       format: 'png',
-      multiplier: 2,
+      multiplier: 1 / baseScaleX,
       left: minX,
       top: minY,
       width: width,
       height: height,
     });
+
+    canvas.setViewportTransform(originalVpt);
+    return dataUrl;
   };
 
   const handleDownload = () => {
