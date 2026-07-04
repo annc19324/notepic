@@ -17,7 +17,10 @@ import {
   Sparkles,
   Layers,
   Highlighter,
-  PenTool
+  PenTool,
+  RefreshCw,
+  Lock,
+  Unlock
 } from 'lucide-react';
 import './App.css';
 
@@ -36,6 +39,7 @@ export default function App() {
   const [shadowEffect, setShadowEffect] = useState(true);
   const [textBgEffect, setTextBgEffect] = useState(false);
   const [outlineEffect, setOutlineEffect] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
   
   const [toastMessage, setToastMessage] = useState('');
   const [hasObjects, setHasObjects] = useState(false);
@@ -47,6 +51,7 @@ export default function App() {
   const shadowEffectRef = useRef(shadowEffect);
   const textBgEffectRef = useRef(textBgEffect);
   const outlineEffectRef = useRef(outlineEffect);
+  const isLockedRef = useRef(isLocked);
 
   // Sync refs with state
   useEffect(() => { activeToolRef.current = activeTool; }, [activeTool]);
@@ -56,6 +61,7 @@ export default function App() {
   useEffect(() => { shadowEffectRef.current = shadowEffect; }, [shadowEffect]);
   useEffect(() => { textBgEffectRef.current = textBgEffect; }, [textBgEffect]);
   useEffect(() => { outlineEffectRef.current = outlineEffect; }, [outlineEffect]);
+  useEffect(() => { isLockedRef.current = isLocked; }, [isLocked]);
 
   const drawingState = useRef({
     isDrawing: false,
@@ -411,21 +417,21 @@ export default function App() {
     }
   };
 
-  // Effect to update selectability when tool changes
+  // Effect to update selectability when tool changes or lock state changes
   useEffect(() => {
     if (!fabricRef.current) return;
     const canvas = fabricRef.current;
     canvas.getObjects().forEach(obj => {
       obj.set({ 
-        selectable: activeTool === 'select', 
-        evented: activeTool === 'select',
-        hoverCursor: activeTool === 'select' ? 'move' : 'default' 
+        selectable: !isLocked && activeTool === 'select', 
+        evented: !isLocked && activeTool === 'select',
+        hoverCursor: (!isLocked && activeTool === 'select') ? 'move' : 'default' 
       });
     });
-    if (activeTool !== 'select') canvas.discardActiveObject();
+    if (activeTool !== 'select' || isLocked) canvas.discardActiveObject();
     canvas.defaultCursor = activeTool === 'pan' ? 'grab' : activeTool === 'crop' ? 'crosshair' : 'default';
     canvas.renderAll();
-  }, [activeTool]);
+  }, [activeTool, isLocked]);
 
   // Effect to apply color changes to new and selected items
   useEffect(() => {
@@ -509,6 +515,15 @@ export default function App() {
     };
     reader.readAsDataURL(file);
     e.target.value = null;
+  };
+
+  const handleClearAll = () => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa tất cả bản vẽ không?')) {
+      fabricRef.current.clear();
+      saveHistory();
+      setHasObjects(false);
+      showToast('Đã xóa tất cả');
+    }
   };
 
   const deleteSelected = () => {
@@ -657,11 +672,14 @@ export default function App() {
             onChange={handleImageUpload}
             style={{ display: 'none' }} 
           />
-          <button className="btn btn-icon" onClick={handleUndoCmd} title="Hoàn tác (Ctrl+Z)">
+          <button className="btn btn-icon" onClick={handleUndoCmd} title="Hoàn tác nét xóa/vẽ (Ctrl+Z)">
             <Undo2 size={20} />
           </button>
           <button className="btn btn-icon" onClick={handleRedoCmd} title="Tiếp tục (Ctrl+Y)">
             <Redo2 size={20} />
+          </button>
+          <button className="btn btn-icon" onClick={handleClearAll} title="Làm mới (Xóa tất cả)">
+            <RefreshCw size={20} color="var(--danger)" />
           </button>
 
           <div className="tool-divider" style={{ width: '1px', height: '24px', background: 'var(--panel-border)', margin: '0 8px' }} />
@@ -792,10 +810,20 @@ export default function App() {
 
           <div className="tool-divider" />
 
-          <div className="tool-group">
-            <button className="btn-icon" onClick={deleteSelected} title="Xóa (Delete/Backspace)" style={{ width: '100%', justifyContent: 'center' }}>
+          <div className="tool-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+            <button 
+              className={`btn-icon ${isLocked ? 'active' : ''}`} 
+              onClick={() => setIsLocked(!isLocked)} 
+              title={isLocked ? "Mở khóa các đối tượng" : "Khóa đối tượng để không vô tình chạm vào"} 
+              style={{ width: '100%', justifyContent: 'center' }}
+            >
+              {isLocked ? <Lock size={20} /> : <Unlock size={20} />}
+              <span style={{ fontSize: '0.75rem', marginLeft: '0.5rem' }}>{isLocked ? 'Đã khóa' : 'Khóa nền'}</span>
+            </button>
+
+            <button className="btn-icon" onClick={deleteSelected} title="Xóa vùng đang chọn (Delete/Backspace)" style={{ width: '100%', justifyContent: 'center' }}>
               <Trash2 size={20} color="var(--danger)" />
-              <span style={{ color: 'var(--danger)', fontSize: '0.875rem', marginLeft: '0.5rem', fontWeight: 500 }}>Xóa vùng chọn</span>
+              <span style={{ color: 'var(--danger)', fontSize: '0.75rem', marginLeft: '0.5rem', fontWeight: 500 }}>Xóa vùng</span>
             </button>
           </div>
         </aside>
