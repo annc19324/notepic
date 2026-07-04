@@ -513,7 +513,10 @@ export default function App() {
       } else if (activeObj.type === 'path') {
         activeObj.set({ stroke: color, fill: color, opacity });
       } else if (activeObj.type === 'image') {
-        activeObj.set({ opacity });
+        activeObj.set({ opacity, shadow: null });
+        canvas.renderAll();
+        saveHistory();
+        return;
       }
 
       if (neonEffect) {
@@ -523,7 +526,7 @@ export default function App() {
           offsetX: 0,
           offsetY: 0
         }));
-      } else if (outlineEffect && activeObj.type !== 'i-text' && activeObj.type !== 'image') {
+      } else if (outlineEffect && activeObj.type !== 'i-text') {
         activeObj.set('shadow', new fabric.Shadow({
           color: getOutlineColor(color),
           blur: (effectIntensity / 100) * 10,
