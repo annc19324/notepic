@@ -694,13 +694,13 @@ export default function App() {
   };
 
   const tools = [
-    { id: 'select', icon: <MousePointer2 size={24} />, title: 'Chọn (Select)' },
-    { id: 'pan', icon: <Hand size={24} />, title: 'Kéo xem ảnh (Pan)' },
-    { id: 'crop', icon: <Crop size={24} />, title: 'Cắt vùng ảnh (Crop)' },
-    { id: 'circle', icon: <Circle size={24} />, title: 'Khoanh tròn (Circle)' },
-    { id: 'arrow', icon: <ArrowUpRight size={24} />, title: 'Mũi tên (Arrow)' },
-    { id: 'text', icon: <Type size={24} />, title: 'Ghi chú (Text)' },
-    { id: 'eraser', icon: <Eraser size={24} />, title: 'Xóa kéo (Eraser)' },
+    { id: 'select', icon: <MousePointer2 size={20} />, title: 'Chọn (Select)' },
+    { id: 'pan', icon: <Hand size={20} />, title: 'Kéo xem ảnh (Pan)' },
+    { id: 'crop', icon: <Crop size={20} />, title: 'Cắt vùng ảnh (Crop)' },
+    { id: 'circle', icon: <Circle size={20} />, title: 'Khoanh tròn (Circle)' },
+    { id: 'arrow', icon: <ArrowUpRight size={20} />, title: 'Mũi tên (Arrow)' },
+    { id: 'text', icon: <Type size={20} />, title: 'Ghi chú (Text)' },
+    { id: 'eraser', icon: <Eraser size={20} />, title: 'Xóa kéo (Eraser)' },
   ];
 
   const colors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ffffff', '#000000'];
@@ -770,17 +770,17 @@ export default function App() {
       <main className="main-content">
         
         {/* Floating Toolbar */}
-        <aside className="toolbar glass" style={{ width: '220px' }}>
+        <aside className="toolbar glass" style={{ width: '180px' }}>
           
-          <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem', letterSpacing: '0.05em' }}>CÔNG CỤ</div>
-          <div className="tool-group" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
+          <div style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.2rem', letterSpacing: '0.05em' }}>CÔNG CỤ</div>
+          <div className="tool-group" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.35rem' }}>
             {tools.map(t => (
               <button 
                 key={t.id}
                 className={`btn-icon ${activeTool === t.id ? 'active' : ''}`}
                 onClick={() => setActiveTool(t.id)}
                 title={t.title}
-                style={{ width: '100%', justifyContent: 'center' }}
+                style={{ width: '100%', height: '36px', justifyContent: 'center' }}
               >
                 {t.icon}
               </button>
@@ -789,8 +789,8 @@ export default function App() {
           
           <div className="tool-divider" />
           
-          <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem', letterSpacing: '0.05em' }}>MÀU SẮC</div>
-          <div className="tool-group" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', justifyItems: 'center' }}>
+          <div style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.2rem', letterSpacing: '0.05em' }}>MÀU SẮC</div>
+          <div className="tool-group" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.35rem', justifyItems: 'center' }}>
             {colors.map(c => (
               <div 
                 key={c}
@@ -819,48 +819,48 @@ export default function App() {
 
           <div className="tool-divider" />
 
-          <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.25rem', letterSpacing: '0.05em' }}>HIỆU ỨNG</div>
-          <div className="tool-group" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
+          <div style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.2rem', letterSpacing: '0.05em' }}>HIỆU ỨNG</div>
+          <div className="tool-group" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.35rem' }}>
             <button 
               className={`btn-icon ${shadowEffect && !neonEffect ? 'active' : ''}`} 
               onClick={() => { setShadowEffect(!shadowEffect); if (neonEffect) setNeonEffect(false); }} 
               title="Đổ bóng để nổi bật công cụ vẽ (Drop Shadow)"
-              style={{ width: '100%', justifyContent: 'center' }}
+              style={{ width: '100%', height: '36px', justifyContent: 'center' }}
             >
-              <Layers size={20} />
+              <Layers size={18} />
             </button>
             <button 
               className={`btn-icon ${neonEffect ? 'active' : ''}`} 
               onClick={() => { setNeonEffect(!neonEffect); if (shadowEffect) setShadowEffect(false); }} 
               title="Hiệu ứng phát sáng màu (Neon Glow)"
-              style={{ width: '100%', justifyContent: 'center' }}
+              style={{ width: '100%', height: '36px', justifyContent: 'center' }}
             >
-              <Sparkles size={20} />
+              <Sparkles size={18} />
             </button>
             <button 
               className={`btn-icon ${textBgEffect ? 'active' : ''}`} 
               onClick={() => setTextBgEffect(!textBgEffect)} 
               title="Thêm nền cho chữ (Text Background)"
-              style={{ width: '100%', justifyContent: 'center' }}
+              style={{ width: '100%', height: '36px', justifyContent: 'center' }}
             >
-              <Highlighter size={20} />
+              <Highlighter size={18} />
             </button>
             <button 
               className={`btn-icon ${outlineEffect ? 'active' : ''}`} 
               onClick={() => { setOutlineEffect(!outlineEffect); if (neonEffect) setNeonEffect(false); }} 
               title="Thêm viền cho nét và chữ (Outline)"
-              style={{ width: '100%', justifyContent: 'center' }}
+              style={{ width: '100%', height: '36px', justifyContent: 'center' }}
             >
-              <PenTool size={20} />
+              <PenTool size={18} />
             </button>
           </div>
 
           <div className="tool-divider" />
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-               <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>CƯỜNG ĐỘ (EFFECT)</label>
-               <span style={{ fontSize: '0.75rem', color: 'var(--text-main)' }}>{effectIntensity}</span>
+               <label style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>CƯỜNG ĐỘ (EFFECT)</label>
+               <span style={{ fontSize: '0.7rem', color: 'var(--text-main)' }}>{effectIntensity}</span>
             </div>
             <input 
               type="range" 
@@ -871,10 +871,10 @@ export default function App() {
             />
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.25rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-               <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>ĐỘ MỜ</label>
-               <span style={{ fontSize: '0.75rem', color: 'var(--text-main)' }}>{Math.round(opacity * 100)}%</span>
+               <label style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>ĐỘ MỜ</label>
+               <span style={{ fontSize: '0.7rem', color: 'var(--text-main)' }}>{Math.round(opacity * 100)}%</span>
             </div>
             <input 
               type="range" 
@@ -887,20 +887,20 @@ export default function App() {
 
           <div className="tool-divider" />
 
-          <div className="tool-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+          <div className="tool-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.35rem' }}>
             <button 
               className={`btn-icon ${isLocked ? 'active' : ''}`} 
               onClick={() => setIsLocked(!isLocked)} 
               title={isLocked ? "Mở khóa các đối tượng" : "Khóa đối tượng để không vô tình chạm vào"} 
-              style={{ width: '100%', justifyContent: 'center' }}
+              style={{ width: '100%', height: '36px', justifyContent: 'center' }}
             >
-              {isLocked ? <Lock size={20} /> : <Unlock size={20} />}
-              <span style={{ fontSize: '0.75rem', marginLeft: '0.5rem' }}>{isLocked ? 'Đã khóa' : 'Khóa nền'}</span>
+              {isLocked ? <Lock size={16} /> : <Unlock size={16} />}
+              <span style={{ fontSize: '0.65rem', marginLeft: '0.25rem' }}>{isLocked ? 'Đã khóa' : 'Khóa nền'}</span>
             </button>
 
-            <button className="btn-icon" onClick={deleteSelected} title="Xóa vùng đang chọn (Delete/Backspace)" style={{ width: '100%', justifyContent: 'center' }}>
-              <Trash2 size={20} color="var(--danger)" />
-              <span style={{ color: 'var(--danger)', fontSize: '0.75rem', marginLeft: '0.5rem', fontWeight: 500 }}>Xóa chọn</span>
+            <button className="btn-icon" onClick={deleteSelected} title="Xóa vùng đang chọn (Delete/Backspace)" style={{ width: '100%', height: '36px', justifyContent: 'center' }}>
+              <Trash2 size={16} color="var(--danger)" />
+              <span style={{ color: 'var(--danger)', fontSize: '0.65rem', marginLeft: '0.25rem', fontWeight: 500 }}>Xóa chọn</span>
             </button>
           </div>
         </aside>
