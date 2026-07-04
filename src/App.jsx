@@ -35,6 +35,7 @@ export default function App() {
   const [activeTool, setActiveTool] = useState('select');
   const [color, setColor] = useState('#ef4444');
   const [opacity, setOpacity] = useState(1);
+  const [effectIntensity, setEffectIntensity] = useState(50);
   const isInsertRef = useRef(false);
   
   // Effects
@@ -55,6 +56,7 @@ export default function App() {
   const textBgEffectRef = useRef(textBgEffect);
   const outlineEffectRef = useRef(outlineEffect);
   const isLockedRef = useRef(isLocked);
+  const effectIntensityRef = useRef(effectIntensity);
 
   // Sync refs with state
   useEffect(() => { activeToolRef.current = activeTool; }, [activeTool]);
@@ -65,6 +67,7 @@ export default function App() {
   useEffect(() => { textBgEffectRef.current = textBgEffect; }, [textBgEffect]);
   useEffect(() => { outlineEffectRef.current = outlineEffect; }, [outlineEffect]);
   useEffect(() => { isLockedRef.current = isLocked; }, [isLocked]);
+  useEffect(() => { effectIntensityRef.current = effectIntensity; }, [effectIntensity]);
 
   const drawingState = useRef({
     isDrawing: false,
@@ -159,6 +162,7 @@ export default function App() {
       const currentShadow = shadowEffectRef.current;
       const currentTextBg = textBgEffectRef.current;
       const currentOutline = outlineEffectRef.current;
+      const currentIntensity = effectIntensityRef.current;
 
       if (currentTool === 'pan') {
         drawingState.current.isDragging = true;
@@ -192,11 +196,11 @@ export default function App() {
       
       let shadow = null;
       if (currentNeon) {
-        shadow = new fabric.Shadow({ color: currentColor, blur: 15, offsetX: 0, offsetY: 0 });
+        shadow = new fabric.Shadow({ color: currentColor, blur: (currentIntensity / 100) * 30, offsetX: 0, offsetY: 0 });
       } else if (currentOutline && currentTool !== 'text') {
-        shadow = new fabric.Shadow({ color: getOutlineColor(currentColor), blur: 5, offsetX: 0, offsetY: 0 });
+        shadow = new fabric.Shadow({ color: getOutlineColor(currentColor), blur: (currentIntensity / 100) * 10, offsetX: 0, offsetY: 0 });
       } else if (currentShadow) {
-        shadow = new fabric.Shadow({ color: 'rgba(0,0,0,0.6)', blur: 4, offsetX: 3, offsetY: 3 });
+        shadow = new fabric.Shadow({ color: 'rgba(0,0,0,0.6)', blur: (currentIntensity / 100) * 8, offsetX: (currentIntensity / 100) * 5, offsetY: (currentIntensity / 100) * 5 });
       }
 
       if (currentTool === 'text') {
@@ -247,8 +251,8 @@ export default function App() {
         const path = new fabric.Path(pathString, {
           stroke: currentColor,
           strokeWidth: 4,
-          strokeLinecap: 'round',
-          strokeLinejoin: 'round',
+          strokeLinecap: 'butt',
+          strokeLinejoin: 'miter',
           opacity: currentOpacity,
           shadow: shadow,
           fill: 'transparent',
@@ -500,23 +504,23 @@ export default function App() {
       if (neonEffect) {
         activeObj.set('shadow', new fabric.Shadow({
           color: color,
-          blur: 15,
+          blur: (effectIntensity / 100) * 30,
           offsetX: 0,
           offsetY: 0
         }));
       } else if (outlineEffect && activeObj.type !== 'i-text' && activeObj.type !== 'image') {
         activeObj.set('shadow', new fabric.Shadow({
           color: getOutlineColor(color),
-          blur: 5,
+          blur: (effectIntensity / 100) * 10,
           offsetX: 0,
           offsetY: 0
         }));
       } else if (shadowEffect) {
         activeObj.set('shadow', new fabric.Shadow({
           color: 'rgba(0,0,0,0.6)',
-          blur: 4,
-          offsetX: 3,
-          offsetY: 3
+          blur: (effectIntensity / 100) * 8,
+          offsetX: (effectIntensity / 100) * 5,
+          offsetY: (effectIntensity / 100) * 5
         }));
       } else {
         activeObj.set('shadow', null);
@@ -525,12 +529,16 @@ export default function App() {
       canvas.renderAll();
       saveHistory();
     }
-  }, [color, opacity, neonEffect, shadowEffect, textBgEffect, outlineEffect]);
+  }, [color, opacity, neonEffect, shadowEffect, textBgEffect, outlineEffect, effectIntensity]);
 
   const getArrowPath = (fromx, fromy, tox, toy) => {
     const angle = Math.atan2(toy - fromy, tox - fromx);
-    const headlen = 20;
-    return `M ${fromx} ${fromy} L ${tox} ${toy} L ${tox - headlen * Math.cos(angle - Math.PI / 7)} ${toy - headlen * Math.sin(angle - Math.PI / 7)} M ${tox} ${toy} L ${tox - headlen * Math.cos(angle + Math.PI / 7)} ${toy - headlen * Math.sin(angle + Math.PI / 7)}`;
+    const headlen = 25;
+    const leftX = tox - headlen * Math.cos(angle - Math.PI / 8);
+    const leftY = toy - headlen * Math.sin(angle - Math.PI / 8);
+    const rightX = tox - headlen * Math.cos(angle + Math.PI / 8);
+    const rightY = toy - headlen * Math.sin(angle + Math.PI / 8);
+    return `M ${fromx} ${fromy} L ${tox} ${toy} M ${leftX} ${leftY} L ${tox} ${toy} L ${rightX} ${rightY}`;
   };
 
   const handleImageUpload = (e) => {
@@ -847,6 +855,20 @@ export default function App() {
           <div className="tool-divider" />
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+               <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>CƯỜNG ĐỘ (EFFECT)</label>
+               <span style={{ fontSize: '0.75rem', color: 'var(--text-main)' }}>{effectIntensity}</span>
+            </div>
+            <input 
+              type="range" 
+              min="0" max="100" step="1" 
+              value={effectIntensity} 
+              onChange={(e) => setEffectIntensity(parseInt(e.target.value))}
+              style={{ width: '100%' }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>ĐỘ MỜ</label>
                <span style={{ fontSize: '0.75rem', color: 'var(--text-main)' }}>{Math.round(opacity * 100)}%</span>
