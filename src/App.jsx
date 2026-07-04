@@ -467,14 +467,15 @@ export default function App() {
     if (!fabricRef.current) return;
     const canvas = fabricRef.current;
     canvas.getObjects().forEach(obj => {
+      const isInteractive = !isLocked && (activeTool === 'select' || activeTool === 'eraser');
       obj.set({ 
         selectable: !isLocked && activeTool === 'select', 
-        evented: !isLocked && activeTool === 'select',
-        hoverCursor: (!isLocked && activeTool === 'select') ? 'move' : 'default' 
+        evented: isInteractive,
+        hoverCursor: (!isLocked && activeTool === 'select') ? 'move' : (activeTool === 'eraser' ? 'crosshair' : 'default') 
       });
     });
     if (activeTool !== 'select' || isLocked) canvas.discardActiveObject();
-    canvas.defaultCursor = activeTool === 'pan' ? 'grab' : activeTool === 'crop' ? 'crosshair' : activeTool === 'eraser' ? 'pointer' : 'default';
+    canvas.defaultCursor = activeTool === 'pan' ? 'grab' : activeTool === 'crop' ? 'crosshair' : activeTool === 'eraser' ? 'crosshair' : 'default';
     canvas.renderAll();
   }, [activeTool, isLocked]);
 
