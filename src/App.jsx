@@ -747,31 +747,12 @@ export default function App() {
     const dataURL = getHighQualityDataURL();
     if (!dataURL) return;
     try {
-      // Use an offscreen canvas to generate a clean Blob for the clipboard.
-      // This helps mitigate Windows Clipboard losing PNG alpha channel.
-      const img = new Image();
-      img.onload = () => {
-        const offCanvas = document.createElement('canvas');
-        offCanvas.width = img.width;
-        offCanvas.height = img.height;
-        const ctx = offCanvas.getContext('2d');
-        ctx.clearRect(0, 0, offCanvas.width, offCanvas.height);
-        ctx.drawImage(img, 0, 0);
-        
-        offCanvas.toBlob(async (blob) => {
-          if (!blob) return;
-          try {
-            await navigator.clipboard.write([
-              new ClipboardItem({ 'image/png': blob })
-            ]);
-            showToast('Đã sao chép ảnh vào Clipboard!');
-          } catch (err) {
-            console.error(err);
-            showToast('Lỗi khi ghi vào Clipboard');
-          }
-        }, 'image/png');
-      };
-      img.src = dataURL;
+      const res = await fetch(dataURL);
+      const blob = await res.blob();
+      await navigator.clipboard.write([
+        new ClipboardItem({ 'image/png': blob })
+      ]);
+      showToast('Đã sao chép ảnh vào Clipboard!');
     } catch (err) {
       console.error(err);
       showToast('Lỗi khi sao chép ảnh');
@@ -1075,7 +1056,13 @@ export default function App() {
               </p>
             </div>
           )}
-          <div className="canvas-wrapper">
+          <div 
+            className="canvas-wrapper"
+            onContextMenu={(e) => {
+              e.preventDefault();
+              handleCopy();
+            }}
+          >
             <canvas ref={canvasRef} />
           </div>
         </div>
