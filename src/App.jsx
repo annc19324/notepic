@@ -190,7 +190,7 @@ export default function App() {
       if (currentTool === 'eraser') {
         drawingState.current.isDrawing = true;
         const target = initCanvas.findTarget(o.e);
-        if (target) {
+        if (target && target.type !== 'image') {
           initCanvas.remove(target);
           saveHistory();
         }
@@ -334,7 +334,7 @@ export default function App() {
       
       if (currentTool === 'eraser') {
         const target = initCanvas.findTarget(o.e);
-        if (target) {
+        if (target && target.type !== 'image') {
           initCanvas.remove(target);
           saveHistory();
         }
@@ -404,12 +404,12 @@ export default function App() {
             initCanvas.remove(shape);
           }
         } else if (shape) {
+          shape.setCoords();
           const bounds = shape.getBoundingRect();
           if (bounds.width < 5 && bounds.height < 5) {
             initCanvas.remove(shape);
           } else {
             shape.set({ selectable: true, evented: true });
-            shape.setCoords();
             saveHistory();
           }
         }
