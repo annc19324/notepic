@@ -26,9 +26,55 @@ import {
   Pen,
   Square,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  FolderOpen
 } from 'lucide-react';
 import './App.css';
+
+// --- IndexedDB for FileSystemHandle ---
+const DB_NAME = 'NotepicDB';
+const STORE_NAME = 'handles';
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onupgradeneeded = (e) => {
+      e.target.result.createObjectStore(STORE_NAME);
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function getSavedDirHandle() {
+  try {
+    const db = await openDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const store = tx.objectStore(STORE_NAME);
+      const request = store.get('dirHandle');
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => resolve(null);
+    });
+  } catch (err) {
+    return null;
+  }
+}
+
+async function saveDirHandle(handle) {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      const request = store.put(handle, 'dirHandle');
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  } catch (err) {
+    console.error(err);
+  }
+}
 
 export default function App() {
   const canvasRef = useRef(null);
@@ -42,6 +88,7 @@ export default function App() {
   const [strokeWidth, setStrokeWidth] = useState(4);
   const [effectIntensity, setEffectIntensity] = useState(50);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [dirHandle, setDirHandle] = useState(null);
   const isInsertRef = useRef(false);
   
   // Effects
@@ -733,14 +780,69 @@ export default function App() {
     return dataUrl;
   };
 
-  const handleDownload = () => {
+  const selectDirectory = async () => {
+    if (!window.showDirectoryPicker) {
+      showToast('Trình duyệt của bạn không hỗ trợ tính năng chọn thư mục!');
+      return;
+    }
+    try {
+      const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+      setDirHandle(handle);
+      await saveDirHandle(handle);
+      showToast(`Đã chọn thư mục: ${handle.name}`);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDownload = async () => {
     const dataURL = getHighQualityDataURL();
     if (!dataURL) return;
-    const link = document.createElement('a');
-    link.download = `notepic-${Date.now()}.png`;
-    link.href = dataURL;
-    link.click();
-    showToast('Đã tải xuống ảnh!');
+
+    if (!window.showDirectoryPicker) {
+      const link = document.createElement('a');
+      link.download = `notepic_${Date.now()}.png`;
+      link.href = dataURL;
+      link.click();
+      showToast('Đã lưu ảnh qua trình duyệt!');
+      return;
+    }
+
+    if (!dirHandle) {
+      showToast('Vui lòng CHỌN THƯ MỤC trước khi tải xuống!');
+      selectDirectory();
+      return;
+    }
+
+    try {
+      if (await dirHandle.queryPermission({ mode: 'readwrite' }) !== 'granted') {
+        const permission = await dirHandle.requestPermission({ mode: 'readwrite' });
+        if (permission !== 'granted') {
+          showToast('Không có quyền truy cập thư mục! Hãy chọn lại.');
+          return;
+        }
+      }
+
+      const res = await fetch(dataURL);
+      const blob = await res.blob();
+      
+      const date = new Date();
+      const filename = `notepic_${date.getFullYear()}${(date.getMonth()+1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}_${date.getHours().toString().padStart(2, '0')}${date.getMinutes().toString().padStart(2, '0')}${date.getSeconds().toString().padStart(2, '0')}.png`;
+
+      const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+      const writable = await fileHandle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+
+      showToast('Đã lưu ảnh thành công vào thư mục!');
+    } catch (err) {
+      console.error(err);
+      const link = document.createElement('a');
+      link.download = `notepic_${Date.now()}.png`;
+      link.href = dataURL;
+      link.click();
+      showToast('Đã lưu ảnh qua trình duyệt!');
+    }
   };
 
   const handleCopy = async () => {
@@ -855,6 +957,25 @@ export default function App() {
             <ImagePlus size={20} />
             Thêm ảnh (Bên cạnh)
           </button>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem' }}>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              {window.showDirectoryPicker && (
+                <button className="btn outline" onClick={selectDirectory}>
+                  <FolderOpen size={18} />
+                  {dirHandle ? 'Đổi thư mục' : 'Chọn thư mục lưu'}
+                </button>
+              )}
+              <button className="btn outline" onClick={handleDownload}>
+                <Download size={18} />
+                Tải xuống
+              </button>
+            </div>
+            {dirHandle && (
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                Lưu tại: <strong style={{ color: 'var(--text-main)' }}>{dirHandle.name}</strong>
+              </span>
+            )}
+          </div>
           <button className="btn glass" onClick={handlePasteButton}>
             <ClipboardPaste size={20} />
             Dán ảnh (Ctrl+V)
@@ -862,10 +983,6 @@ export default function App() {
           <button className="btn btn-primary" onClick={handleCopy}>
             <Copy size={20} />
             Sao chép
-          </button>
-          <button className="btn btn-primary" onClick={handleDownload}>
-            <Download size={20} />
-            Tải xuống
           </button>
         </div>
       </header>
