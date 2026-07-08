@@ -157,6 +157,12 @@ export default function App() {
   };
 
   useEffect(() => {
+    getSavedDirHandle().then(handle => {
+      if (handle) setDirHandle(handle);
+    });
+  }, []);
+
+  useEffect(() => {
     // Initialize Fabric canvas
     const initCanvas = new fabric.Canvas(canvasRef.current, {
       width: 1920,
