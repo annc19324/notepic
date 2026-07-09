@@ -138,6 +138,25 @@ export default function App() {
   const historyIndex = useRef(-1);
   const isHistoryProcessing = useRef(false);
 
+  const applySelectability = (canvas) => {
+    if (!canvas) return;
+    const currentTool = activeToolRef.current;
+    const currentLocked = isLockedRef.current;
+    
+    canvas.getObjects().forEach(obj => {
+      const isInteractive = !currentLocked && (currentTool === 'select' || currentTool === 'eraser');
+      obj.set({ 
+        selectable: !currentLocked && currentTool === 'select', 
+        evented: isInteractive,
+        hoverCursor: (!currentLocked && currentTool === 'select') ? 'move' : (currentTool === 'eraser' ? 'crosshair' : 'default') 
+      });
+    });
+    if (currentTool !== 'select' || currentLocked) canvas.discardActiveObject();
+    canvas.defaultCursor = currentTool === 'pan' ? 'grab' : currentTool === 'crop' ? 'crosshair' : currentTool === 'eraser' ? 'crosshair' : 'default';
+    canvas.isDrawingMode = (currentTool === 'pen' && !currentLocked);
+    canvas.renderAll();
+  };
+
   const saveHistory = () => {
     if (isHistoryProcessing.current || !fabricRef.current) return;
     const canvas = fabricRef.current;
@@ -178,7 +197,7 @@ export default function App() {
     if (savedData) {
       isHistoryProcessing.current = true;
       initCanvas.loadFromJSON(savedData, () => {
-        initCanvas.renderAll();
+        applySelectability(initCanvas);
         isHistoryProcessing.current = false;
         saveHistory();
         setHasObjects(initCanvas.getObjects().length > 0);
@@ -557,7 +576,7 @@ export default function App() {
       isHistoryProcessing.current = true;
       historyIndex.current--;
       fabricRef.current.loadFromJSON(history.current[historyIndex.current], () => {
-        fabricRef.current.renderAll();
+        applySelectability(fabricRef.current);
         isHistoryProcessing.current = false;
       });
     }
@@ -568,7 +587,7 @@ export default function App() {
       isHistoryProcessing.current = true;
       historyIndex.current++;
       fabricRef.current.loadFromJSON(history.current[historyIndex.current], () => {
-        fabricRef.current.renderAll();
+        applySelectability(fabricRef.current);
         isHistoryProcessing.current = false;
       });
     }
@@ -576,20 +595,7 @@ export default function App() {
 
   // Effect to update selectability when tool changes or lock state changes
   useEffect(() => {
-    if (!fabricRef.current) return;
-    const canvas = fabricRef.current;
-    canvas.getObjects().forEach(obj => {
-      const isInteractive = !isLocked && (activeTool === 'select' || activeTool === 'eraser');
-      obj.set({ 
-        selectable: !isLocked && activeTool === 'select', 
-        evented: isInteractive,
-        hoverCursor: (!isLocked && activeTool === 'select') ? 'move' : (activeTool === 'eraser' ? 'crosshair' : 'default') 
-      });
-    });
-    if (activeTool !== 'select' || isLocked) canvas.discardActiveObject();
-    canvas.defaultCursor = activeTool === 'pan' ? 'grab' : activeTool === 'crop' ? 'crosshair' : activeTool === 'eraser' ? 'crosshair' : 'default';
-    canvas.isDrawingMode = (activeTool === 'pen' && !isLocked);
-    canvas.renderAll();
+    applySelectability(fabricRef.current);
   }, [activeTool, isLocked]);
 
   // Effect to apply color changes to new and selected items
